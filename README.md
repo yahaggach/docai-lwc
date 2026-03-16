@@ -13,7 +13,6 @@ Before deploying, confirm the following in the **target org**:
 |---|---|
 | **Salesforce CLI installed** | Run `sf --version` in a terminal |
 | **Data Cloud licensed and provisioned** | Setup → Data Cloud → must show an active Data Cloud instance |
-| **Document Processing API enabled** | In Data Cloud setup, the Document AI / Document Processing feature must be turned on |
 | **API version 62.0+** | The component targets Spring '25 (v62.0). Older API versions are not supported |
 
 ---
@@ -162,7 +161,7 @@ docai-lwc-package/
 ## Troubleshooting
 
 **"Document AI API error (404)"**
-The Data Cloud Document Processing API endpoint is not reachable. Confirm the feature is enabled in Data Cloud setup and that the API version in `sfdx-project.json` and `cls-meta.xml` matches or is lower than what your org supports.
+The Data Cloud Document Processing API endpoint is not reachable. Confirm that Data Cloud is licensed and provisioned in your org and that the API version in `sfdx-project.json` and `cls-meta.xml` matches or is lower than what your org supports.
 
 **"Document AI API error (401)" or "403"**
 The session token is invalid. Ensure `DocAISessionHelper.page` was deployed and that the running user has at least Read access to it. Also confirm the Remote Site Setting URL exactly matches the org's My Domain URL.
