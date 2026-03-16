@@ -1,0 +1,21 @@
+# Local-only files
+schemas.zip
+*.zip
+
+# Salesforce DX
+.sfdx/
+.sf/
+*.secret
+
+# Node
+node_modules/
+.npm/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

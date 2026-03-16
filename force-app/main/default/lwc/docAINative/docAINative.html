@@ -1,0 +1,431 @@
+<template>
+<div class="pipeline-root">
+
+    <!-- ══ PAGE HEADER ══════════════════════════════════════════════════ -->
+    <div class="page-header">
+        <div class="page-header-inner">
+            <lightning-icon icon-name="utility:data_cloud" size="medium" class="hdr-icon"></lightning-icon>
+            <div>
+                <h1 class="hdr-title">Document AI</h1>
+                <p class="hdr-sub">Data Cloud Powered</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ STEPPER ═══════════════════════════════════════════════════════ -->
+    <div class="stepper-bar">
+        <div class={step1Class}>
+            <span class="step-num">1</span>
+            <span class="step-lbl">File</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class={step2Class}>
+            <span class="step-num">2</span>
+            <span class="step-lbl">Model &amp; Schema</span>
+        </div>
+        <div class="step-connector"></div>
+        <div class={step3Class}>
+            <span class="step-num">3</span>
+            <span class="step-lbl">Results</span>
+        </div>
+    </div>
+
+    <div class="page-body">
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STEP 1 — FILE SELECTION
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <template if:true={isStep1}>
+        <div class="panel">
+            <h2 class="panel-title">Select a Document</h2>
+            <p class="panel-desc">Choose a PDF or image file from your org to analyze.</p>
+
+            <template if:true={filesLoading}>
+                <div class="center-spinner">
+                    <lightning-spinner size="small" alternative-text="Loading files…"></lightning-spinner>
+                </div>
+            </template>
+
+            <template if:false={filesLoading}>
+
+                <!-- Upload card — always visible above the grid -->
+                <div class="file-card file-card_upload file-upload-standalone">
+                    <lightning-icon icon-name="utility:upload" size="large" class="upload-icon"></lightning-icon>
+                    <div class="file-meta">
+                        <p class="file-title">Upload a new file</p>
+                        <p class="file-detail">PDF, JPG, PNG, XLSX, PPTX</p>
+                    </div>
+                    <lightning-file-upload
+                        label="Browse…"
+                        name="docAIUploader"
+                        accept=".pdf,.png,.jpg,.jpeg,.xlsx,.pptx"
+                        onuploadfinished={handleUploadFinished}>
+                    </lightning-file-upload>
+                </div>
+
+                <!-- Filter toolbar -->
+                <div class="file-filters">
+                    <div class="file-search-wrap">
+                        <lightning-input
+                            type="search"
+                            placeholder="Search by name…"
+                            value={fileSearchTerm}
+                            onchange={handleFileSearchChange}
+                            class="file-search">
+                        </lightning-input>
+                    </div>
+                    <div class="type-pills">
+                        <template for:each={fileTypeOptions} for:item="opt">
+                            <button
+                                key={opt.value}
+                                class={opt.pillClass}
+                                data-value={opt.value}
+                                onclick={handleFileTypeFilter}
+                                type="button">
+                                {opt.label}
+                            </button>
+                        </template>
+                    </div>
+                    <span class="file-count-label">{fileCountLabel}</span>
+                </div>
+
+                <!-- File grid — paginated -->
+                <div class="file-grid">
+                    <template for:each={availableFiles} for:item="file">
+                        <div key={file.versionId} class={file.cardClass} onclick={selectFile} data-vid={file.versionId} data-did={file.documentId} data-title={file.title}>
+                            <lightning-icon icon-name={file.iconName} size="large" class="file-type-icon"></lightning-icon>
+                            <div class="file-meta">
+                                <p class="file-title">{file.title}</p>
+                                <p class="file-detail">{file.fileType} · {file.sizeLabel}</p>
+                            </div>
+                            <template if:true={file.isSelected}>
+                                <div class="file-selected-badge">
+                                    <lightning-icon icon-name="utility:check" size="x-small"></lightning-icon>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Pagination bar -->
+                <div class="pagination-bar">
+                    <button class="pg-nav-btn" onclick={handlePrevPage} disabled={noPrevPage} type="button">
+                        <lightning-icon icon-name="utility:chevronleft" size="x-small"></lightning-icon>
+                    </button>
+                    <div class="pg-numbers">
+                        <template for:each={pageItems} for:item="pg">
+                            <template if:true={pg.isEllipsis}>
+                                <span key={pg.n} class="pg-ellipsis">{pg.label}</span>
+                            </template>
+                            <template if:false={pg.isEllipsis}>
+                                <button key={pg.n} class={pg.btnClass} data-page={pg.n} onclick={handleGoToPage} type="button">{pg.label}</button>
+                            </template>
+                        </template>
+                    </div>
+                    <button class="pg-nav-btn" onclick={handleNextPage} disabled={noNextPage} type="button">
+                        <lightning-icon icon-name="utility:chevronright" size="x-small"></lightning-icon>
+                    </button>
+                </div>
+            </template>
+
+            <div class="nav-row">
+                <lightning-button variant="brand" label="Next →" onclick={goStep2} disabled={noFileSelected}></lightning-button>
+            </div>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STEP 2 — MODEL & SCHEMA
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <template if:true={isStep2}>
+        <div class="panel">
+
+            <!-- Model row -->
+            <div class="model-row">
+                <lightning-combobox
+                    label="Model"
+                    value={selectedModel}
+                    options={modelOptions}
+                    onchange={handleModelChange}
+                    class="model-select">
+                </lightning-combobox>
+                <div class="selected-file-chip">
+                    <lightning-icon icon-name="doctype:pdf" size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                    {selectedFileTitle}
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Schema section title + action bar -->
+            <div class="schema-header-row">
+                <h2 class="panel-title" style="margin:0">Extraction Schema</h2>
+                <div class="schema-actions">
+                    <lightning-button
+                        label="Generate from File"
+                        icon-name="utility:einstein"
+                        onclick={generateSchemaFromFile}
+                        disabled={isLoading}
+                        title="Let the AI infer the schema from the document">
+                    </lightning-button>
+                    <lightning-button
+                        label="Upload JSON"
+                        icon-name="utility:upload"
+                        onclick={triggerSchemaUpload}
+                        title="Upload a .json schema file">
+                    </lightning-button>
+                    <lightning-button
+                        label="Download"
+                        icon-name="utility:download"
+                        onclick={downloadSchema}
+                        disabled={noSchema}
+                        title="Download the current schema as schema.json">
+                    </lightning-button>
+                    <lightning-button
+                        label="Clear"
+                        icon-name="utility:delete"
+                        variant="destructive-text"
+                        onclick={clearSchema}
+                        disabled={noSchema}>
+                    </lightning-button>
+                </div>
+            </div>
+            <!-- Hidden file input for schema upload -->
+            <input type="file" accept=".json,application/json" class="hidden-input"
+                   data-id="schema-upload" onchange={handleSchemaFileUpload}>
+
+            <!-- Schema generate spinner -->
+            <template if:true={schemaLoading}>
+                <div class="inline-loading">
+                    <lightning-spinner size="small" alternative-text="Generating schema…"></lightning-spinner>
+                    <span class="loading-lbl">Generating schema from document…</span>
+                </div>
+            </template>
+
+            <!-- Visual field builder -->
+            <div class="field-builder">
+                <div class="field-builder-header">
+                    <span class="field-builder-title">Fields</span>
+                    <span class="field-count-badge">{schemaFieldCount}</span>
+                </div>
+
+                <template if:true={hasSchemaFields}>
+                    <div class="field-rows">
+                        <template for:each={schemaFields} for:item="field">
+                            <div key={field.id} class="field-row">
+
+                                <!-- Top bar: name + type + remove -->
+                                <div class="field-row-main">
+                                    <span class="field-row-name">{field.name}</span>
+                                    <span class={field.typeBadgeClass}>{field.typeLabel}</span>
+                                    <button class="field-remove-btn" onclick={removeField} data-id={field.id} title="Remove field">×</button>
+                                </div>
+
+                                <!-- Extraction hint / prompt -->
+                                <input
+                                    type="text"
+                                    class="field-desc-input"
+                                    placeholder="Extraction hint / prompt (optional)…"
+                                    value={field.description}
+                                    data-id={field.id}
+                                    oninput={handleFieldDescChange}>
+
+                                <!-- Columns sub-section for array of objects -->
+                                <template if:true={field.isArrayObjects}>
+                                    <div class="field-cols-section">
+                                        <span class="field-cols-title">Columns (object properties)</span>
+                                        <template if:true={field.hasColumns}>
+                                            <div class="col-rows">
+                                                <template for:each={field.columns} for:item="col">
+                                                    <div key={col.id} class="col-row">
+                                                        <span class="col-name">{col.name}</span>
+                                                        <span class={col.typeBadgeClass}>{col.type}</span>
+                                                        <button class="col-remove-btn" onclick={removeColumn}
+                                                                data-fid={field.id} data-cid={col.id}>×</button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template if:false={field.hasColumns}>
+                                            <p class="col-empty">No columns defined yet.</p>
+                                        </template>
+                                        <!-- Add column form -->
+                                        <div class="add-col-row">
+                                            <input type="text" class="add-col-name-input"
+                                                   placeholder="column_name"
+                                                   data-col-name-fid={field.id}
+                                                   oninput={handleNewColName}>
+                                            <select class="add-col-type-select"
+                                                    data-col-type-fid={field.id}
+                                                    onchange={handleNewColType}>
+                                                <option value="string">string</option>
+                                                <option value="number">number</option>
+                                                <option value="boolean">boolean</option>
+                                            </select>
+                                            <button class="add-col-btn" onclick={addColumn} data-fid={field.id}>+ Col</button>
+                                        </div>
+                                    </div>
+                                </template>
+
+                            </div>
+                        </template>
+                    </div>
+                </template>
+                <template if:false={hasSchemaFields}>
+                    <p class="field-builder-empty">No fields defined. Generate a schema or add fields below.</p>
+                </template>
+
+                <!-- Add field form -->
+                <div class="add-field-form">
+                    <input type="text" class="add-field-input" placeholder="field_name"
+                           data-id="new-field-name" value={newFieldName} oninput={handleNewFieldName}>
+                    <select class="add-field-type" data-id="new-field-type" onchange={handleNewFieldType}>
+                        <option value="string">string</option>
+                        <option value="number">number</option>
+                        <option value="boolean">boolean</option>
+                        <option value="array_strings">array of strings</option>
+                        <option value="array_objects">array of objects</option>
+                    </select>
+                    <button class="add-field-btn" onclick={addField} disabled={noNewFieldName}>+ Add Field</button>
+                </div>
+            </div>
+
+            <!-- JSON schema editor -->
+            <div class="json-editor-wrap">
+                <div class="json-editor-header">
+                    <span class="json-editor-title">JSON Schema</span>
+                    <template if:true={schemaValid}>
+                        <span class="schema-status schema-ok">
+                            <lightning-icon icon-name="utility:check" size="x-small"></lightning-icon> Valid JSON
+                        </span>
+                    </template>
+                    <template if:true={schemaError}>
+                        <span class="schema-status schema-err">
+                            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon> {schemaError}
+                        </span>
+                    </template>
+                </div>
+                <textarea
+                    class="json-editor"
+                    value={schemaJson}
+                    oninput={handleSchemaInput}
+                    placeholder={schemaPlaceholder}
+                    rows="14"
+                    spellcheck="false">
+                </textarea>
+            </div>
+
+            <div class="nav-row">
+                <lightning-button label="← Back" onclick={goStep1}></lightning-button>
+                <lightning-button variant="brand" label="Extract →" onclick={runExtraction} disabled={cantExtract}></lightning-button>
+            </div>
+        </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         STEP 3 — RESULTS
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <template if:true={isStep3}>
+        <div class="panel results-panel">
+
+            <!-- Hidden anchor used by the JS download helpers -->
+            <a data-id="dl-anchor" style="display:none"></a>
+
+            <!-- Results header -->
+            <div class="results-hdr">
+                <div>
+                    <h2 class="panel-title" style="margin-bottom:2px">Extraction Results</h2>
+                    <p class="results-meta">{resultsMetaLabel}</p>
+                </div>
+                <div class="results-hdr-actions">
+                    <lightning-button label="Re-run" icon-name="utility:refresh" onclick={runExtraction} disabled={isLoading}></lightning-button>
+                    <lightning-button label="← Modify Schema" onclick={goStep2} disabled={isLoading}></lightning-button>
+                    <lightning-button label="JSON" icon-name="utility:download" onclick={downloadJson} disabled={cantDownload} title="Download results as JSON"></lightning-button>
+                    <lightning-button label="CSV"  icon-name="utility:download" onclick={downloadCsv}  disabled={cantDownload} title="Download results as CSV (Excel-ready)"></lightning-button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <template if:true={isLoading}>
+                <div class="extract-loading">
+                    <lightning-spinner size="medium" alternative-text="Extracting data…"></lightning-spinner>
+                    <p class="loading-title">Extracting structured data…</p>
+                    <p class="loading-sub">Using {selectedModelLabel} · this may take 10–20 seconds</p>
+                </div>
+            </template>
+
+            <!-- Error -->
+            <template if:true={extractionError}>
+                <div class="error-box">
+                    <lightning-icon icon-name="utility:error" size="small" class="slds-m-right_x-small"></lightning-icon>
+                    <span>{extractionError}</span>
+                </div>
+            </template>
+
+            <!-- Results grid -->
+            <template if:true={hasResults}>
+                <div class="results-grid">
+                    <template for:each={resultFields} for:item="field">
+                        <div key={field.key} class={field.colClass}>
+                            <div class={field.cardClass}>
+
+                                <!-- Field header -->
+                                <div class="res-card-hdr">
+                                    <div class="res-hdr-left">
+                                        <lightning-icon icon-name={field.icon} size="x-small" class="res-hdr-icon"></lightning-icon>
+                                        <span class="res-field-label">{field.label}</span>
+                                    </div>
+                                    <span class={field.confClass} title={field.confTitle}>{field.confLabel}</span>
+                                </div>
+
+                                <!-- Scalar value -->
+                                <template if:true={field.isScalar}>
+                                    <div class="res-card-body">
+                                        <p class={field.valClass}>{field.displayValue}</p>
+                                    </div>
+                                </template>
+
+                                <!-- Array value -->
+                                <template if:true={field.isArray}>
+                                    <div class="res-card-body">
+                                        <div class="array-header" onclick={toggleArrayField} data-key={field.key}>
+                                            <lightning-icon icon-name={field.expandIcon} size="x-small" class="slds-m-right_xx-small"></lightning-icon>
+                                            <span class="array-count">{field.itemCount} {field.itemLabel}</span>
+                                        </div>
+                                        <template if:true={field.isExpanded}>
+                                            <!-- Primitive list -->
+                                            <template if:true={field.isPrimitiveArray}>
+                                                <ul class="primitive-list">
+                                                    <template for:each={field.primitiveItems} for:item="item">
+                                                        <li key={item.key} class="primitive-item">{item.value}</li>
+                                                    </template>
+                                                </ul>
+                                            </template>
+                                            <!-- Object table -->
+                                            <template if:false={field.isPrimitiveArray}>
+                                                <div class="array-table-wrap">
+                                                    <lightning-datatable
+                                                        key-field="__rowIndex"
+                                                        data={field.tableData}
+                                                        columns={field.tableColumns}
+                                                        hide-checkbox-column
+                                                        resize-column-disabled>
+                                                    </lightning-datatable>
+                                                </div>
+                                            </template>
+                                        </template>
+                                    </div>
+                                </template>
+
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+        </div>
+    </template>
+
+    </div><!-- /page-body -->
+</div><!-- /pipeline-root -->
+</template>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Allows Apex HTTP callouts to the org own REST API for native Document AI processing</description>
+    <disableProtocolSecurity>false</disableProtocolSecurity>
+    <isActive>true</isActive>
+    <url>https://YOUR_ORG_DOMAIN.my.salesforce.com</url>
+</RemoteSiteSetting>
